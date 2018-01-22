@@ -13,31 +13,37 @@ from torch.nn import Parameter as P
 from torch.utils.data import DataLoader
 
 from args import args
+from env import env
 from exploration import decay_exploration, epsilon, epsilon_greedy
 from model import Q
+from replay_buffer import replay_buffer
+from train import train
 
 done = False
 s = env.reset()  # TODO fold into rollout
-i = 0  # TODO fold into rollout
 
 optimizer = optim.Adam(Q.parameters(), lr=args.lr)
 
 # TODO wrap data in dataset
 
-while not done:
+for i in range(args.iterations):
+    while not done:
 
-    epsilon = decay_exploration(i, epsilon)
+        epsilon = decay_exploration(i, epsilon)
 
-    a = epsilon_greedy(s, epsilon=epsilon)
+        a = epsilon_greedy(s, epsilon=epsilon)
 
-    r, succ, done, _ = env.step(a)
-    replay_buffer.append([s, a, r, succ, done])
+        succ, r, done, _ = env.step(a)
+        replay_buffer.append([s, a, r, succ, done])
 
-    s = succ
+        s = succ
 
-    if i % batch_size == 0 and i > 0:
-        # TODO
-        train(optimizer)
+    # TODO uncomment when Q works
+        # if i % args.batch_size == 0 and i > 0:
+        if i % args.batch_size == 0:
+            # TODO
+            train(optimizer)
+
 
 if __name__ == '__main__':
-    pass
+    print(replay_buffer[0])

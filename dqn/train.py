@@ -29,11 +29,12 @@ def train(buffer):
 
     # TODO implement sampling and tensorize everything
 
-    states = NotImplemented
-    succs = NotImplemented
-    actions = NotImplemented
-    dones = NotImplemented
-    rewards = NotImplemented
+    states = [i[0] for i in sample]
+    actions = [i[1] for i in sample]
+    rewards = [i[2] for i in sample]
+    succs = [i[3] for i in sample]
+    dones = [i[4] for i in sample]
+
     q_s = Q(states)
     q_succ = Q(succs)
 

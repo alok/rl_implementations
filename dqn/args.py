@@ -14,9 +14,17 @@ parser.add_argument(
 
 parser.add_argument(
     '-r',
-    'replay_buffer_size',
+    '--replay_buffer_size',
     type=int,
     default=10**6,
+)
+
+
+parser.add_argument(
+    '-i',
+    '--iterations',
+    type=int,
+    default=1000,
 )
 
 parser.add_argument(
@@ -37,8 +45,8 @@ parser.add_argument(
 
 parser.add_argument(
     '-l',
-    '--learning_rate',
     '--lr',
+    '--learning_rate',
     type=float,
     default=1e-7,
 )

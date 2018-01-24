@@ -9,14 +9,14 @@ parser.add_argument(
     '-b',
     '--batch_size',
     type=int,
-    default=64,
+    default=128,
 )
 
 parser.add_argument(
     '-r',
     '--replay_buffer_size',
     type=int,
-    default=10**6,
+    default=10**4,
 )
 
 
@@ -24,7 +24,7 @@ parser.add_argument(
     '-i',
     '--iterations',
     type=int,
-    default=1000,
+    default=10**3,
 )
 
 parser.add_argument(
@@ -40,7 +40,7 @@ parser.add_argument(
     '--exploration_rate',
     '--epsilon',
     type=float,
-    default=0.05,
+    default=0.9,
 )
 
 parser.add_argument(

@@ -17,7 +17,7 @@ epsilon = args.exploration_rate
 def epsilon_greedy(s, Q=Q, epsilon=epsilon):
     # torch expects FloatTensors, so we use `.float()`
     s = torch.from_numpy(s).float()
-    s = Variable(s).cuda()
+    s = Variable(s, volatile=True).cuda()
 
     if random.random() <= epsilon:
         a = env.action_space.sample()

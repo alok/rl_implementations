@@ -14,13 +14,15 @@ import sys
 from logging import debug, info, log
 from pathlib import Path
 
+import gym
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.nn.init as init
 import torch.optim as optim
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
-from torch import nn
+from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.distributions import Categorical, Normal
 from torch.nn import Linear, LogSoftmax, Parameter, ReLU, Sequential, Softmax
@@ -31,7 +33,7 @@ loss = torch.nn.functional.cross_entropy
 
 class Model(nn.Module):
     def __init__(self, env):
-
+        super().__init__()
         S, A = int(np.prod(env.observation_space.shape)), int(env.action_space.n)
         H = 50
         self.model = nn.Sequential(
@@ -41,7 +43,8 @@ class Model(nn.Module):
             ReLU(),
             Linear(H, H),
             ReLU(),
-            Softmax(H, A),  # don't use logsoftmax since we also have to sample from it
+            Linear(H, A),
+            Softmax(dim=0),  # don't use logsoftmax since we also have to sample from it
         )
 
     def forward(self, x):
@@ -49,4 +52,7 @@ class Model(nn.Module):
 
 
 if __name__ == '__main__':
-    pass
+    env = gym.make('CartPole-v0')
+    pi = Model(env)
+    p = Categorical(pi(Variable(torch.randn(4))))
+    # p = Categorical(pi)

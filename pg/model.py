@@ -22,8 +22,10 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 from torch import nn
 from torch.autograd import Variable
-from torch.nn import Linear, Parameter, ReLU, Sequential, Softmax
+from torch.nn import Linear, Parameter, ReLU, Sequential, Softmax, LogSoftmax
 from torch.utils.data import DataLoader, Dataset
+
+loss = torch.nn.functional.cross_entropy
 
 
 class Model(nn.Module):
@@ -38,7 +40,7 @@ class Model(nn.Module):
             ReLU(),
             Linear(H, H),
             ReLU(),
-            Softmax(H, A),
+            Softmax(H, A), # don't use logsoftmax since we also have to sample from it
         )
 
     def forward(self, x):

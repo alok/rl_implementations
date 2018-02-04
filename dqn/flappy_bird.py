@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import random
-from copy import deepcopy
 
 import gym
 import numpy as np

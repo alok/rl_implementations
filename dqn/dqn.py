@@ -11,6 +11,8 @@ from torch import nn
 from torch.autograd import Variable
 from torch.nn import functional as F
 
+from lib.replay_buffer import ReplayBuffer
+
 BUFFER_SIZE = 10**6
 BATCH_SIZE = 128
 GAMMA = 0.99
@@ -40,25 +42,6 @@ def eps_greedy(env, state, q_function, step):
 
 def get_index(idx, batch):
     return [item[idx] for item in batch]
-
-
-class ReplayBuffer(object):
-    def __init__(self, buffer_size):
-        self.buffer_size = buffer_size
-        self.buffer = []
-
-    def append(self, transition):
-        if len(self.buffer) < self.buffer_size:
-            self.buffer.append(transition)
-        else:
-            idx = len(self.buffer) % self.buffer_size
-            self.buffer[idx] = transition
-
-    def sample(self, batch_size):
-        return random.sample(self.buffer, batch_size)
-
-    def __len__(self):
-        return len(self.buffer)
 
 
 class Model(nn.Module):

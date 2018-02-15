@@ -41,10 +41,10 @@ def foldr(arr: np.ndarray, op) -> np.ndarray:
 # TODO generate minibatch in one shot
 
 
-def gen_data():
-    xs = np.random.randint(low=0, high=2, size=(SEQ_LEN, BATCH_SIZE, INPUT_DIM))
+def gen_data(seq_len=SEQ_LEN, batch_size=BATCH_SIZE, input_dim=INPUT_DIM):
+    xs = np.random.randint(low=0, high=2, size=(seq_len, batch_size, input_dim))
     # Have to do some weird slicing here to do the fold in one shot
-    ys = np.array([foldr(xs[:, i, :], operator.xor) for i in range(xs.shape[1])])
+    ys = np.stack([foldr(xs[:, i, :], operator.xor) for i in range(xs.shape[1])])
 
     xs = Variable(torch.from_numpy(xs).float())
     ys = Variable(torch.from_numpy(ys).long())
@@ -71,7 +71,7 @@ class rnn(nn.Module):
 model = nn.LSTM(
     input_size=1,
     hidden_size=2,
-    num_layers=3,
+    num_layers=1,
 )
 
 if __name__ == '__main__':
@@ -80,13 +80,22 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters())
 
     while True:
-        xs, ys = gen_data()
+
+        seq_len = np.random.randint(low=1, high=50 + 1)
+        batch_size = np.random.randint(low=1, high=32 + 1)
+        input_dim = INPUT_DIM
+
+        xs, ys = gen_data(
+            seq_len=seq_len,
+            batch_size=batch_size,
+            input_dim=input_dim,
+        )
 
         predictions, hiddens = model(xs)
-        # predictions = nn.functional.softmax(predictions)
+        # predictions = nn.functional.softmax(predictions, dim=2)
 
         loss = criterion(predictions.view(-1, NUM_CLASSES), ys.view(-1))
-        print(loss)
+        print(loss.data[0])
 
         optimizer.zero_grad()
         loss.backward()

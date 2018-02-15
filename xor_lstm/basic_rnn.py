@@ -26,14 +26,15 @@ from torch.nn import (BatchNorm1d, BatchNorm2d, Conv2d, Dropout, Dropout2d,
                       Linear, MaxPool2d, Parameter, ReLU, Sequential, Softmax)
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
-N = 1
+INPUT_DIM = 1
 NUM_CLASSES = 2
 SEQ_LEN = 50
-BATCH_SIZE = 32
+BATCH_SIZE = 1
 
 
 def foldr(arr: np.ndarray, op) -> np.ndarray:
     """Specific version of foldr that's only for Numpy arrays"""
+
     return np.fromiter(accumulate(arr, op), dtype=np.float32, count=len(arr))
 
 
@@ -41,8 +42,12 @@ def foldr(arr: np.ndarray, op) -> np.ndarray:
 
 
 def gen_data():
-    xs = Variable(torch.from_numpy(np.random.randint(low=0, high=2, size=(SEQ_LEN, N))).float())
-    ys = Variable(torch.from_numpy(np.array([foldr(x, operator.xor) for x in xs], dtype=np.int64)))
+    xs = np.random.randint(low=0, high=2, size=(SEQ_LEN, BATCH_SIZE, INPUT_DIM))
+    # Have to do some weird slicing here to do the fold in one shot
+    ys = np.array([foldr(xs[:, i, :], operator.xor) for i in range(xs.shape[1])])
+
+    xs = Variable(torch.from_numpy(xs).float())
+    ys = Variable(torch.from_numpy(ys).long())
     return xs, ys
 
 
@@ -77,10 +82,10 @@ if __name__ == '__main__':
     while True:
         xs, ys = gen_data()
 
-        predictions, hiddens = model(xs[:, None])
+        predictions, hiddens = model(xs)
         # predictions = nn.functional.softmax(predictions)
 
-        loss = criterion(predictions.view(-1, NUM_CLASSES), ys.squeeze())
+        loss = criterion(predictions.view(-1, NUM_CLASSES), ys.view(-1))
         print(loss)
 
         optimizer.zero_grad()

@@ -16,20 +16,28 @@ NUM_EPISODES = 1000
 
 env = gym.make('CartPole-v0')
 
-S, A = int(np.prod(env.observation_space.shape)), int(env.action_space.n)
+S, A, H = int(np.prod(env.observation_space.shape)), int(env.action_space.n), 50
 
 # for discrete action spaces only
-policy = Sequential(
-    Linear(S, 50),
+actor = Sequential(
+    Linear(S, H),
     ReLU(),
-    Linear(50, 50),
+    Linear(H, H),
     ReLU(),
-    Linear(50, A),
+    Linear(H, A),
     Softmax(),
 ).cuda()
 
-opt = optim.Adam(policy.parameters())
+# Value function
+critic = Sequential(
+    Linear(S, H),
+    ReLU(),
+    Linear(H, H),
+    ReLU(),
+    Linear(H, 1),
+).cuda()
 
+opt = optim.Adam(list(actor.parameters()) + list(critic.parameters()))
 
 def G(rewards, start=0, end=None):
     return sum(rewards[start:end])
@@ -39,13 +47,15 @@ if __name__ == '__main__':
 
     for episode in range(NUM_EPISODES):
         s, done = env.reset(), False
-        rewards, log_probs = [], []
+        states, rewards, log_probs = [], [], []
 
         while not done:
             s = Variable(torch.from_numpy(s).float()).cuda()
-            p = distributions.Categorical(policy(s))
+            p = distributions.Categorical(actor(s))
             a = p.sample()
             succ, r, done, _ = env.step(int(a.data))
+
+            states.append(s)
             rewards.append(r)
             log_probs.append(p.log_prob(a))
 
@@ -54,11 +64,15 @@ if __name__ == '__main__':
         discounted_rewards = [pow(DISCOUNT, t) * r for t, r in enumerate(rewards)]
         cumulative_returns = [G(discounted_rewards, t) for t in range(len(discounted_rewards))]
 
+        states = torch.stack(states).cuda()
+        state_values = critic(states).view(-1)
+
         R = Variable(Tensor((cumulative_returns))).cuda()
+        Adv = R - state_values  # Advantage estimator
 
         log_probs = torch.stack(log_probs).view(-1)
 
-        loss = -(R @ log_probs) / len(rewards)
+        loss = -((Adv @ log_probs) / len(rewards))
 
         opt.zero_grad()
         loss.backward()

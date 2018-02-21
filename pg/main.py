@@ -24,6 +24,11 @@ NUM_EPISODES = args.iterations
 
 env = gym.make(args.env)
 
+state_size, action_size = int(np.prod(env.observation_space.shape)), int(env.action_space.n)
+hidden_size = 50
+
+S, A, H = state_size, action_size, hidden_size
+
 # for discrete action spaces only
 actor = Sequential(
     Linear(S, H),
@@ -73,8 +78,8 @@ if __name__ == '__main__':
         states = torch.stack(states).cuda()
         state_values = critic(states).view(-1)
 
-        R = Variable(Tensor((cumulative_returns))).cuda()
-        Adv = R - state_values  # Advantage estimator
+        cumulative_returns = Variable(Tensor((cumulative_returns))).cuda()
+        Adv = cumulative_returns - state_values  # Advantage estimator
 
         log_probs = torch.stack(log_probs).view(-1)
 

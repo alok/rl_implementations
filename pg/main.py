@@ -50,11 +50,14 @@ critic = Sequential(
 
 opt = optim.Adam(list(actor.parameters()) + list(critic.parameters()))
 
+
 def G(rewards, start=0, end=None):
     return sum(rewards[start:end])
 
 
 if __name__ == '__main__':
+
+    stats = []
 
     for episode in range(NUM_EPISODES):
         s, done = env.reset(), False
@@ -89,7 +92,11 @@ if __name__ == '__main__':
         opt.step()
         opt.zero_grad()
 
-        print(f'ep: {episode}, R: {sum(rewards)}')
+        stats.append((episode, sum(rewards)))
 
-        if sum(rewards) > 200 - 5:
-            print(30 * '-')
+        # if sum(rewards) >= env.spec.reward_threshold:
+        #     print(f'ep: {episode}, R: {sum(rewards)}')
+
+    # turn into list of lists
+    stats = [list(x) for x in zip(*stats)]
+    print(DISCOUNT, len([r for r in stats[1] if r >= env.spec.reward_threshold]))

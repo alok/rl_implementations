@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
         log_probs = torch.stack(log_probs).view(-1)
 
-        loss = -((Adv @ log_probs) / len(rewards))
+        loss = -Adv.dot(log_probs) / len(rewards)
 
         opt.zero_grad()
         loss.backward()

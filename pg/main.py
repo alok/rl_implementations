@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import random
 
 import gym
@@ -11,12 +12,17 @@ from torch import Tensor, distributions
 from torch.autograd import Variable
 from torch.nn import Linear, ReLU, Sequential, Softmax
 
-DISCOUNT = 0.99
-NUM_EPISODES = 1000
+parser = argparse.ArgumentParser()
+parser.add_argument('-n', '--iterations', type=int, default=10**3)
+parser.add_argument('-d', '--discount', type=float, default=1.0)
+parser.add_argument('-e', '--env', type=str, default='CartPole-v0')
 
-env = gym.make('CartPole-v0')
+args = parser.parse_args()
 
-S, A, H = int(np.prod(env.observation_space.shape)), int(env.action_space.n), 50
+DISCOUNT = args.discount
+NUM_EPISODES = args.iterations
+
+env = gym.make(args.env)
 
 # for discrete action spaces only
 actor = Sequential(

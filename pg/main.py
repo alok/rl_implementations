@@ -85,9 +85,9 @@ if __name__ == '__main__':
 
         loss = -Adv.dot(log_probs) / len(rewards)
 
-        opt.zero_grad()
         loss.backward()
         opt.step()
+        opt.zero_grad()
 
         print(f'ep: {episode}, R: {sum(rewards)}')
 

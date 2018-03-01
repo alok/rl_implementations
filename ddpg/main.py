@@ -142,7 +142,7 @@ for iteration in range(NUM_EPISODES):
     td_estims = get_critic_train_data(succ_states, rewards)
     critic_preds = critic(states, actions)
     critic_opt.zero_grad()
-    critic_loss = F.smooth_l1_loss(td_estims, critic_preds)
+    critic_loss = F.smooth_l1_loss(critic_preds, td_estims)
 
     critic_loss.backward()
     # TODO Why am I getting an error about retaining the graph?

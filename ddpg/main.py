@@ -112,8 +112,6 @@ def get_critic_train_data(succ_states, rewards, dones):
     return td_estimate.detach()
 
 
-actor_target, critic_target = deepcopy(actor), deepcopy(critic)
-
 noise = Normal(mean=Variable(torch.zeros(A)), std=Variable(torch.ones(A)) * 1e-1)
 
 buffer = ReplayBuffer(BUFFER_SIZE)
@@ -137,12 +135,14 @@ for iteration in range(NUM_EPISODES):
         s = succ
 
     states, actions, rewards, succ_states, dones = format_batch(buffer.sample(BATCH_SIZE))
+    states.requires_grad = False
 
     td_estims = get_critic_train_data(succ_states, rewards, dones)
     critic_preds = critic(states, actions)
     critic_opt.zero_grad()
     critic_loss = F.smooth_l1_loss(critic_preds, td_estims)
 
+    critic.zero_grad()
     critic_loss.backward()
     critic_opt.step()
 

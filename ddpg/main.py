@@ -10,12 +10,12 @@ import gym
 import numpy as np
 import torch
 import torch.nn.functional as F
-import torch.optim as optim
 from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.distributions import Normal
 from torch.nn import BatchNorm1d, Dropout, Linear, ReLU, Sequential
 from torch.nn.functional import relu
+from torch.optim import Adam
 
 env = gym.make('Pendulum-v0')
 
@@ -96,17 +96,6 @@ def format_batch(batch):
     return states, actions, rewards, succ_states, dones
 
 
-# def get_critic_train_data(succ_states, rewards):
-#     # r + Q(s, pi(s'))
-#     succ_states.volatile=True
-#     rewards.volatile=True
-#     Q_succ = critic_target(succ_states, actor_target(succ_states)).squeeze()
-#     td_estimate = rewards + DISCOUNT * Q_succ
-#     td_estimate.volatile=False
-#     succ_states.volatile=False
-#     rewards.volatile=False
-#     return td_estimate
-
 def get_critic_train_data(succ_states, rewards, dones):
     # r + Q(s, pi(s'))
     Q_succ = critic_target(succ_states, actor_target(succ_states)).squeeze()
@@ -120,13 +109,15 @@ noise = Normal(mean=Variable(torch.zeros(A)), std=Variable(torch.ones(A))*1e-3)
 
 buffer = ReplayBuffer(BUFFER_SIZE)
 
-actor_opt, critic_opt = optim.Adam(actor.parameters()), optim.Adam(critic.parameters())
+actor_opt = Adam(actor.parameters())
+critic_opt = Adam(critic.parameters())
 
 for iteration in range(NUM_EPISODES):
 
     s, done = Variable(torch.from_numpy(env.reset()).float()), False
 
-    rews=[]
+    rews = []
+
     while not done:
         # TODO decrease noise over time
         a = actor(s) + noise.sample()
@@ -144,7 +135,6 @@ for iteration in range(NUM_EPISODES):
     critic_loss = F.smooth_l1_loss(critic_preds, td_estims)
 
     critic_loss.backward()
-    # TODO Why am I getting an error about retaining the graph?
     critic_opt.step()
 
     actor_loss = -torch.mean(critic(states, actor(states)))

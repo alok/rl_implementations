@@ -65,24 +65,28 @@ class Critic(nn.Module):
         self.out = Linear(H, 1)
 
     def forward(self, s, a):
-        x = torch.cat((s, a), dim=1)
-        x = relu(self.fc1(x))
-        x = relu(self.fc2(x))
-        x = self.out(x)
-        return x
+        q = torch.cat((s, a), dim=1)
+        q = relu(self.fc1(q))
+        q = relu(self.fc2(q))
+        q = self.out(q)
+        return q
 
 
-actor = Sequential(
-    # BatchNorm1d(S),
-    Linear(S, H),
-    ReLU(),
-    Linear(H, H),
-    ReLU(),
-    Linear(H, A),
-)
+class Actor(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = Linear(S, H)
+        self.fc2 = Linear(H, H)
+        self.out = Linear(H, A)
 
-critic = Critic()
+    def forward(self, s):
+        s = relu(self.fc1(s))
+        s = relu(self.fc2(s))
+        s = self.out(s)
+        return s
 
+
+actor, critic = Actor(), Critic()
 
 def format_batch(batch):
     """Get everything into PyTorch."""

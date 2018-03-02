@@ -109,7 +109,7 @@ def get_critic_train_data(succ_states, rewards, dones):
 
 actor_target, critic_target = deepcopy(actor), deepcopy(critic)
 
-noise = Normal(mean=Variable(torch.zeros(A)), std=Variable(torch.ones(A))*1e-3)
+noise = Normal(mean=Variable(torch.zeros(A)), std=Variable(torch.ones(A)) * 1e-1)
 
 buffer = ReplayBuffer(BUFFER_SIZE)
 

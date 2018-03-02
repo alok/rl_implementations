@@ -88,6 +88,11 @@ class Actor(nn.Module):
 
 actor, critic = Actor(), Critic()
 
+actor_target, critic_target = Actor(), Critic()
+actor_target.load_state_dict(actor.state_dict())
+critic_target.load_state_dict(critic.state_dict())
+
+
 def format_batch(batch):
     """Get everything into PyTorch."""
 
@@ -151,4 +156,6 @@ for iteration in range(NUM_EPISODES):
 
     if iteration % TARGET_UPDATE == 0:
         # TODO soft target updates
-        actor_target, critic_target = deepcopy(actor), deepcopy(critic)
+        actor_target, critic_target = Actor(), Critic()
+        actor_target.load_state_dict(actor.state_dict())
+        critic_target.load_state_dict(critic.state_dict())

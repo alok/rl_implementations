@@ -89,12 +89,11 @@ def format_batch(batch):
 
     states = torch.stack([step.state for step in batch])
     actions = torch.stack([step.action for step in batch])
-    rewards = Variable(torch.Tensor([0 if step.done else step.reward for step in batch]))
+    rewards = Variable(Tensor([step.reward for step in batch]))
     succ_states = torch.stack([step.succ_state for step in batch])
-    # dones = Variable(torch.Tensor([step.done for step in batch]))
+    dones = Variable(Tensor([step.done for step in batch]))
 
-    # return states, actions, rewards, succ_states, dones
-    return states, actions, rewards, succ_states
+    return states, actions, rewards, succ_states, dones
 
 
 # def get_critic_train_data(succ_states, rewards):
@@ -108,11 +107,11 @@ def format_batch(batch):
 #     rewards.volatile=False
 #     return td_estimate
 
-def get_critic_train_data(succ_states, rewards):
+def get_critic_train_data(succ_states, rewards, dones):
     # r + Q(s, pi(s'))
     Q_succ = critic_target(succ_states, actor_target(succ_states)).squeeze()
-    td_estimate = (rewards + DISCOUNT * Q_succ).detach()
-    return td_estimate
+    td_estimate = rewards + ((1 - dones) * DISCOUNT * Q_succ)
+    return td_estimate.detach()
 
 
 actor_target, critic_target = deepcopy(actor), deepcopy(critic)
@@ -137,9 +136,9 @@ for iteration in range(NUM_EPISODES):
         rews.append(r)
         s = succ
 
-    states, actions, rewards, succ_states = format_batch(buffer.sample(BATCH_SIZE))
+    states, actions, rewards, succ_states, dones = format_batch(buffer.sample(BATCH_SIZE))
 
-    td_estims = get_critic_train_data(succ_states, rewards)
+    td_estims = get_critic_train_data(succ_states, rewards, dones)
     critic_preds = critic(states, actions)
     critic_opt.zero_grad()
     critic_loss = F.smooth_l1_loss(critic_preds, td_estims)

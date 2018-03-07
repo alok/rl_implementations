@@ -3,3 +3,4 @@ Some reinforcement learning algorithms I'm (re)-implementing, all in one place. 
 - [x] DQN
 - [x] Policy gradient with critic (A2C)
 - [x] Baby's first LSTM
+- [x] DDPG

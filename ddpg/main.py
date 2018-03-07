@@ -95,49 +95,44 @@ actor_opt = Adam(actor.parameters())
 critic_opt = Adam(critic.parameters())
 
 buffer = ReplayBuffer(BUFFER_SIZE)
+s, rews = np_to_var(env.reset()), []
 
+for timestep in range(NUM_STEPS):
     noise = Normal(mean=Variable(torch.zeros(A)), std=NOISE_FACTOR * Variable(torch.ones(A)))
 
-for iteration in range(NUM_EPISODES):
     if timestep % 1000 == 0:
         NOISE_FACTOR /= 2
 
-    s, done = Variable(torch.from_numpy(env.reset()).float()), False
+    a = actor(s) + noise.sample()
+    succ, r, done, _ = env.step(a.data.numpy())
+    succ = np_to_var(succ)
+    buffer.append(Step(s, a, succ, r, done))
+    rews.append(r)
+    s = np_to_var(env.reset()) if done else succ
+    if done:
         logging.info(f'step:{timestep + 1} | Loss: {-sum(rews)}')
+        rews = []
 
-    rews = []
+    if len(buffer) >= BATCH_SIZE:
+        states, actions, rewards, succ_states, dones = format_batch(buffer.sample(BATCH_SIZE))
 
-    while not done:
-        # TODO decrease noise over time
-        a = actor(s) + noise.sample()
-        succ, r, done, _ = env.step(a.data.numpy())
-        succ = Variable(torch.from_numpy(succ).float())
-        buffer.append(Step(s, a, succ, r, done))
-        rews.append(r)
-        s = succ
+        td_estims = get_critic_train_data(succ_states, rewards, dones)
 
-    states, actions, rewards, succ_states, dones = format_batch(buffer.sample(BATCH_SIZE))
-    states.requires_grad = False
+        critic_preds = critic(states, actions.detach())
 
-    td_estims = get_critic_train_data(succ_states, rewards, dones)
-    critic_preds = critic(states, actions)
-    critic_opt.zero_grad()
-    critic_loss = F.smooth_l1_loss(critic_preds, td_estims)
+        critic_opt.zero_grad()
+        critic_loss = F.smooth_l1_loss(critic_preds, td_estims)
 
-    critic.zero_grad()
-    critic_loss.backward()
-    critic_opt.step()
+        critic_loss.backward()
+        critic_opt.step()
 
-    actor_loss = -torch.mean(critic(states, actor(states)))
+        actor_opt.zero_grad()
+        actor_loss = -critic(states, actor(states)).mean()
 
-    actor_opt.zero_grad()
-    actor_loss.backward()
-    actor_opt.step()
+        actor_loss.backward()
+        actor_opt.step()
 
-    print(sum(rews))
-
-    if iteration % TARGET_UPDATE == 0:
-        # TODO soft target updates
-        actor_target, critic_target = Actor(), Critic()
-        actor_target.load_state_dict(actor.state_dict())
-        critic_target.load_state_dict(critic.state_dict())
+        if timestep % TARGET_UPDATE == 0:
+            # Hard update
+            actor_target.load_state_dict(actor.state_dict())
+            critic_target.load_state_dict(critic.state_dict())

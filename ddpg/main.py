@@ -25,12 +25,14 @@ action_size = int(np.prod(env.action_space.shape))
 S, A = state_size, action_size
 H = hidden_size = 50
 
-NUM_EPISODES = 10**4
+NUM_STEPS = 100_000
+NOISE_FACTOR = 1
 
 BUFFER_SIZE = 1_000_000
-BATCH_SIZE = 32
-DISCOUNT = 0.99
+BATCH_SIZE = 64
+DISCOUNT = 0.995
 TARGET_UPDATE = 100
+SOFT_UPDATE_FACTOR = .01
 
 
 class Critic(nn.Module):
@@ -94,8 +96,11 @@ buffer = ReplayBuffer(BUFFER_SIZE)
 
 actor_opt = Adam(actor.parameters())
 critic_opt = Adam(critic.parameters())
+    noise = Normal(mean=Variable(torch.zeros(A)), std=NOISE_FACTOR * Variable(torch.ones(A)))
 
 for iteration in range(NUM_EPISODES):
+    if timestep % 1000 == 0:
+        NOISE_FACTOR /= 2
 
     s, done = Variable(torch.from_numpy(env.reset()).float()), False
 

@@ -17,6 +17,7 @@ from torch.nn import BatchNorm1d, Dropout, Linear, ReLU, Sequential
 from torch.nn.functional import relu
 from torch.optim import Adam
 
+from utils import ParamDict, ReplayBuffer, Step, np_to_var
 env = gym.make('Pendulum-v0')
 
 state_size = int(np.prod(env.observation_space.shape))
@@ -30,31 +31,6 @@ BUFFER_SIZE = 1_000_000
 BATCH_SIZE = 32
 DISCOUNT = 0.99
 TARGET_UPDATE = 100
-
-
-class Step(NamedTuple):
-    """One step of a rollout."""
-    state: Variable
-    action: Variable
-    succ_state: Variable
-    reward: float
-    done: bool
-
-
-class ReplayBuffer(list):
-    def __init__(self, buffer_size):
-        self.buffer_size = buffer_size
-
-    def append(self, transition):
-
-        if len(self) < self.buffer_size:
-            super().append(transition)
-        else:
-            idx = len(self) % self.buffer_size
-            self[idx] = transition
-
-    def sample(self, batch_size):
-        return random.sample(self, batch_size)
 
 
 class Critic(nn.Module):

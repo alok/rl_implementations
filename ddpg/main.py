@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
+from logging import log
 
 import gym
 import numpy as np
@@ -14,6 +16,9 @@ from torch.nn.functional import relu
 from torch.optim import Adam
 
 from utils import ParamDict, ReplayBuffer, Step, np_to_var
+
+logging.basicConfig(filename='log', level=logging.INFO)
+
 env = gym.make('Pendulum-v0')
 
 state_size = int(np.prod(env.observation_space.shape))
@@ -98,6 +103,7 @@ for iteration in range(NUM_EPISODES):
         NOISE_FACTOR /= 2
 
     s, done = Variable(torch.from_numpy(env.reset()).float()), False
+        logging.info(f'step:{timestep + 1} | Loss: {-sum(rews)}')
 
     rews = []
 

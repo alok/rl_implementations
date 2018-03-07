@@ -86,12 +86,11 @@ def get_critic_train_data(succ_states, rewards, dones):
     return td_estimate.detach()
 
 
-noise = Normal(mean=Variable(torch.zeros(A)), std=Variable(torch.ones(A)) * 1e-1)
+actor_opt = Adam(actor.parameters())
+critic_opt = Adam(critic.parameters())
 
 buffer = ReplayBuffer(BUFFER_SIZE)
 
-actor_opt = Adam(actor.parameters())
-critic_opt = Adam(critic.parameters())
     noise = Normal(mean=Variable(torch.zeros(A)), std=NOISE_FACTOR * Variable(torch.ones(A)))
 
 for iteration in range(NUM_EPISODES):

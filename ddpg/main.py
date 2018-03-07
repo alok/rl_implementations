@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import itertools
-import random
-from copy import deepcopy
-from typing import Any, NamedTuple
 
 import gym
 import numpy as np
@@ -13,7 +9,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.distributions import Normal
-from torch.nn import BatchNorm1d, Dropout, Linear, ReLU, Sequential
+from torch.nn import BatchNorm1d, Dropout, Linear, ReLU
 from torch.nn.functional import relu
 from torch.optim import Adam
 

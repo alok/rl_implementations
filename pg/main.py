@@ -14,7 +14,7 @@ from torch.nn import Linear, ReLU, Sequential, Softmax
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-n', '--iterations', type=int, default=10**3)
-parser.add_argument('-d', '--discount', type=float, default=1.0)
+parser.add_argument('-d', '--discount', type=float, default=0.9999)
 parser.add_argument('-e', '--env', type=str, default='CartPole-v0')
 
 args = parser.parse_args()
@@ -35,13 +35,17 @@ actor = Sequential(
     ReLU(),
     Linear(H, H),
     ReLU(),
+    Linear(H, H),
+    ReLU(),
     Linear(H, A),
-    Softmax(),
+    Softmax(dim=None),
 ).cuda()
 
 # Value function
 critic = Sequential(
     Linear(S, H),
+    ReLU(),
+    Linear(H, H),
     ReLU(),
     Linear(H, H),
     ReLU(),
@@ -83,6 +87,9 @@ if __name__ == '__main__':
 
         cumulative_returns = Variable(Tensor((cumulative_returns))).cuda()
         Adv = cumulative_returns - state_values  # Advantage estimator
+
+        # # normalize reward labels to speed up training
+        # Adv = torch.nn.functional.normalize(Adv, dim=0)
 
         log_probs = torch.stack(log_probs).view(-1)
 

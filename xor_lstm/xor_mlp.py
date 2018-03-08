@@ -13,7 +13,7 @@ from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.nn import Linear, ReLU, Sequential, Softmax
 
-N = 100
+N = 1000
 BATCH_SIZE = 32
 
 
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     for i in range(N):
         preds = model(xs)
         loss = criterion(preds, ys)
+        print(float(loss))
 
         optimizer.zero_grad()
         loss.backward()

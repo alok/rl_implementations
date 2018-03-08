@@ -106,7 +106,7 @@ for timestep in range(NUM_STEPS):
     a = actor(s) + noise.sample()
     succ, r, done, _ = env.step(a.data.numpy())
     succ = np_to_var(succ)
-    buffer.append(Step(s, a, succ, r, done))
+    buffer.append(Step(s, a, r, succ, done))
     rews.append(r)
     s = np_to_var(env.reset()) if done else succ
     if done:

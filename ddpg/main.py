@@ -8,6 +8,7 @@ import gym
 import numpy as np
 import torch
 import torch.nn.functional as F
+from test_tube import Experiment, HyperOptArgumentParser
 from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.distributions import Normal
@@ -17,23 +18,38 @@ from torch.optim import Adam
 
 from utils import ParamDict, ReplayBuffer, Step, np_to_var
 
-logging.basicConfig(filename='log', level=logging.INFO)
+exp = Experiment(
+    name='ddpg',
+    debug=False,
+    save_dir='logs',
+)
+
+parser = HyperOptArgumentParser(strategy='random_search')
+parser.add_argument('--num_steps', default=100_000, type=int, tunnable=False)
+parser.add_argument('--batch_size', default=64, type=int, tunnable=False)
+parser.add_argument('--num_steps', default=100_000, type=int, tunnable=False)
+parser.add_argument('--discount', default=0.995, type=float)
+parser.add_argument('--target_update', default=100, type=int)
+parser.add_argument('--soft_update_factor', default=.01, type=float)
+parser.add_argument('--hidden_size', default=50, type=int)
+parser.add_argument('--buffer_size', default=1_000_000, type=int)
+parser.add_argument('--noise_factor', default=1, type=float)
+
+args = parser.parse_args()
 
 env = gym.make('Pendulum-v0')
 
 state_size = int(np.prod(env.observation_space.shape))
 action_size = int(np.prod(env.action_space.shape))
+
 S, A = state_size, action_size
-H = hidden_size = 50
+H = args.hidden_size
 
-NUM_STEPS = 100_000
-NOISE_FACTOR = 1
-
-BUFFER_SIZE = 1_000_000
-BATCH_SIZE = 64
-DISCOUNT = 0.995
-TARGET_UPDATE = 100
-SOFT_UPDATE_FACTOR = .01
+exp.add_metric_row({
+    'S': state_size,
+    'A': action_size,
+    'H': hidden_size,
+})
 
 
 class Critic(nn.Module):
@@ -136,3 +152,5 @@ for timestep in range(NUM_STEPS):
             # Hard update
             actor_target.load_state_dict(actor.state_dict())
             critic_target.load_state_dict(critic.state_dict())
+
+exp.save()

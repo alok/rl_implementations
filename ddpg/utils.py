@@ -57,4 +57,15 @@ class ParamDict(OrderedDict):
         else:
             return NotImplementedError
 
+    def __sub__(self, other):
+        if isinstance(other, dict):
+            assert other.keys() == self.keys()
+            return ParamDict({k: self[k] - other[k] for k in self})
+        else:
+            return NotImplementedError
+
+    def __neg__(self):
+        return ParamDict({k: -v for k, v in self.items()})
+
+
     __mul__ = __rmul__

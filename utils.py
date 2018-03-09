@@ -9,6 +9,8 @@ from typing import NamedTuple
 
 import numpy as np
 import torch
+from scipy.signal import lfilter
+from torch import Tensor
 from torch.autograd import Variable
 
 
@@ -73,3 +75,12 @@ class ParamDict(OrderedDict):
 
     def __truediv__(self, other):
         return self._prototype(other, operator.truediv)
+
+
+def G(x, discount):
+    if isinstance(x, (Tensor, Variable)):
+        assert x.ndimension >= 1
+        return lfilter([1], [1, -discount], x.numpy()[::-1], axis=0)[::-1]
+    elif isinstance(x, np.ndarray):
+        assert x.ndim >= 1
+    return lfilter([1], [1, -discount], x[::-1], axis=0)[::-1]

@@ -4,6 +4,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+from test_tube import Experiment, HyperOptArgumentParser, HyperParamOptimizer
 from torch import nn
 from torch.autograd import Variable
 from torch.nn import Linear
@@ -56,6 +57,7 @@ def gen_task(input_size=INPUT_SIZE) -> Task:
     loader = DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
+        shuffle=True,
         pin_memory=CUDA_AVAILABLE,  # TODO change to use cuda if available
     )
 
@@ -151,6 +153,7 @@ if __name__ == '__main__':
 
         preds = model(x)
         loss = criterion(preds, y)
+        print(float(loss))
         opt.zero_grad()
         loss.backward()
         opt.step()

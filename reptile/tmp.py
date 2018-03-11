@@ -71,10 +71,13 @@ for iteration in range(niterations):
     y_all = f(x_all)
     # Do SGD on this task
     inds = rng.permutation(len(x_all))
+
+    # train on size 50, 10 at a time
     for _ in range(innerepochs):
         for start in range(0, len(x_all), ntrain):
             mbinds = inds[start:start + ntrain]
             train_on_batch(x_all[mbinds], y_all[mbinds])
+
     # Interpolate between current weights and trained weights from this task
     # I.e. (weights_before - weights_after) is the meta-gradient
     weights_after = model.state_dict()
@@ -86,28 +89,38 @@ for iteration in range(niterations):
 
     # Periodically plot the results on a particular task and minibatch
     if plot and iteration == 0 or (iteration + 1) % 1000 == 0:
-        # plt.cla()
+
+        plt.cla()
+
         f = f_plot
+
         weights_before = deepcopy(model.state_dict())  # save snapshot before evaluation
-        # plt.plot(x_all, predict(x_all), label="pred after 0", color=(0, 0, 1))
+
+        plt.plot(x_all, predict(x_all), label="pred after 0", color=(0, 0, 1))
+
         for inneriter in range(32):
             train_on_batch(xtrain_plot, f(xtrain_plot))
             if (inneriter + 1) % 8 == 0:
                 frac = (inneriter + 1) / 32
-                # plt.plot(
-                #     x_all,
-                #     predict(x_all),
-                #     label="pred after %i" % (inneriter + 1),
-                #     color=(frac, 0, 1 - frac)
-                # )
-        # plt.plot(x_all, f(x_all), label="true", color=(0, 1, 0))
+
+                plt.plot(
+                    x_all,
+                    predict(x_all),
+                    label="pred after %i" % (inneriter + 1),
+                    color=(frac, 0, 1 - frac)
+                )
+
+        plt.plot(x_all, f(x_all), label="true", color=(0, 1, 0))
+
         lossval = np.square(predict(x_all) - f(x_all)).mean()
-        # plt.plot(xtrain_plot, f(xtrain_plot), "x", label="train", color="k")
-        # plt.ylim(-4, 4)
-        # plt.legend(loc="lower right")
-        # plt.pause(0.01)
+
+        plt.plot(xtrain_plot, f(xtrain_plot), "x", label="train", color="k")
+        plt.ylim(-4, 4)
+        plt.legend(loc="lower right")
+        plt.pause(0.01)
+
         model.load_state_dict(weights_before)  # restore from snapshot
-        print(f"-----------------------------")
+        print(72 * '-')
         print(f"iteration               {iteration+1}")
         print(
             f"loss on plotted curve   {lossval:.3f}"

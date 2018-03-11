@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.nn import Linear
+from torch.optim import SGD
 
 from utils import ParamDict as P
 

@@ -1,6 +1,7 @@
 PyTorch Implementation of OpenAI's
 [REPTILE](https://blog.openai.com/reptile/) algorithm. Slightly longer
-but a bit cleaner than John's gist.
+but a bit cleaner than John's
+[gist](https://gist.github.com/joschu/f503500cda64f2ce87c8288906b09e2d#file-reptile-sinewaves-demo-py).
 
 It trains 30,00 meta-iterations of gradient descent, one task at a time.
 It evaluates on a fixed task every 1,000 iterations, taking 5 gradient

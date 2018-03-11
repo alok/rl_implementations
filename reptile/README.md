@@ -1,0 +1,20 @@
+PyTorch Implementation of OpenAI's
+[REPTILE](https://blog.openai.com/reptile/) algorithm. Slightly longer
+but a bit cleaner than John's gist.
+
+It trains 30,00 meta-iterations of gradient descent, one task at a time.
+It evaluates on a fixed task every 1,000 iterations, taking 5 gradient
+descent steps per task. Turns out that 1 is enough to get good
+performance, indicating that meta-learning is actually working.
+
+## Requirements
+
+-   Python 3.6+
+-   Numpy
+-   Matplotlib
+
+## Running the Script
+
+    python3 main.py
+
+It will pop up a matplotlib window that updates every 1,000 iterations.

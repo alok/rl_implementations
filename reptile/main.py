@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import nn
+from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.nn import Linear
 
-from utils import ParamDict
+from utils import ParamDict as P
 
 Weights = ParamDict
 Task = DataLoader
@@ -20,52 +20,47 @@ criterion = F.mse_loss
 CUDA_AVAILABLE = torch.cuda.is_available()
 
 PLOT = True
-INPUT_SIZE = 1
-OUTPUT_SIZE = 1
-LR = 0.02
-HIDDEN_SIZE = 64
-# BATCH_SIZE = 2**7
-BATCH_SIZE = 10
-EPOCHS = 1
-META_LR_START = 1e-1  # copycat
-META_EPOCHS = 30_000
-META_BATCH_SIZE = 1
+INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE = 1, 64, 1
+N = 50  # Use 50 evenly spaced points on sine wave.
 
-N = 50  # 50 ps on sine wave
+LR, META_LR = 0.02, 0.1  # Copy OpenAI's hyperparameters.
+BATCH_SIZE, META_BATCH_SIZE = 10, 1
+EPOCHS, META_EPOCHS = 1, 30_000
+TEST_GRAD_STEPS = 1  # A single gradient step can work well.
 
 
 def cuda(x):
     return x.cuda() if CUDA_AVAILABLE else x
 
 
-def gen_task(input_size=INPUT_SIZE) -> Tuple[Task, float, float]:
+def gen_task(num_pts=N) -> DataLoader:
     # amplitude
     a = np.random.uniform(low=0.1, high=5)  # amplitude
     b = np.random.uniform(low=0, high=2 * np.pi)  # phase
 
-    x = np.linspace(-5, 5, 50)[:, None]
-    y = a * np.sin(x + b)
+    # Need to make x N,1 instead of N, to avoid
+    # https://discuss.pytorch.org/t/dataloader-gives-double-instead-of-float
+    x = torch.linspace(-5, 5, num_pts)[:, None].float()
+    y = a * torch.sin(x + b).float()
 
-    dataset = TensorDataset(torch.from_numpy(x).float(), torch.from_numpy(y).float())
+    dataset = TensorDataset(x, y)
 
     loader = DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        pin_memory=CUDA_AVAILABLE,  # TODO change to use cuda if available
+        pin_memory=CUDA_AVAILABLE,
     )
 
-    return loader, a, b
+    return loader
 
 
 class Model(nn.Module):
     def __init__(self, weights=None):
         super().__init__()
-        I, O = INPUT_SIZE, OUTPUT_SIZE
-        H = HIDDEN_SIZE
-        self.fc1 = Linear(I, H)
-        self.fc2 = Linear(H, H)
-        self.out = Linear(H, O)
+        self.fc1 = Linear(INPUT_SIZE, HIDDEN_SIZE)
+        self.fc2 = Linear(HIDDEN_SIZE, HIDDEN_SIZE)
+        self.out = Linear(HIDDEN_SIZE, OUTPUT_SIZE)
 
         # This has to be after the weight initializations or else we get a
         # KeyError.
@@ -73,49 +68,58 @@ class Model(nn.Module):
             self.load_state_dict(deepcopy(weights))
 
     def forward(self, x):
-        r = F.relu
 
-        x = r(self.fc1(x))
-        x = r(self.fc2(x))
-        x = self.out(x)
-
-        return x
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return self.out(x)
 
 
-def evaluate(model: Model, task: Task) -> float:
+def train_batch(x: Tensor, y: Tensor, model: Model, opt) -> None:
+    """Statefully train model on single batch."""
+    x, y = cuda(Variable(x)), cuda(Variable(y))
+
+    loss = criterion(model(x), y)
+
+    opt.zero_grad()
+    loss.backward()
+    opt.step()
+
+
+def evaluate(model: Model, task: DataLoader, criterion=criterion) -> float:
+    """Evaluate model on all the task data at once."""
     model.eval()
 
-    # evaluate on all the data at once
     x, y = cuda(Variable(task.dataset.data_tensor)), cuda(Variable(task.dataset.target_tensor))
-    preds = model(x)
-
-    loss = criterion(preds, y)
+    loss = criterion(model(x), y)
     return float(loss)
 
 
-def sgd(meta_weights: Weights, k: int) -> Weights:
-    task, _, _ = gen_task()
+def sgd(meta_weights: Weights, epochs: int) -> Weights:
+    """Run SGD on a randomly generated task."""
 
     model = cuda(Model(meta_weights))
+    model.train()  # ensure model is in train mode
 
-    model.train()
-
+    task = gen_task()
     opt = SGD(model.parameters(), lr=LR)
 
-    for i, (x, y) in enumerate(task):
-        x, y = cuda(Variable(x)), cuda(Variable(y))
-        pred = model(x)
-        loss = criterion(pred, y)
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
+    for epoch in range(epochs):
+        for i, (x, y) in enumerate(task):
+            train_batch(x, y, model, opt)
 
-    # print(evaluate(model, task))
-
-    return ParamDict(model.state_dict())
+    return P(model.state_dict())
 
 
-if __name__ == '__main__':
+def REPTILE(meta_weights: Weights, meta_batch_size=META_BATCH_SIZE, epochs=EPOCHS) -> Weights:
+    """Run one iteration of REPTILE."""
+    weights = [sgd(meta_weights, epochs) for _ in range(meta_batch_size)]
+
+    # TODO Implement custom optimizer that makes this work with builtin
+    # optimizers easily. The multiplication by 0 is to get a ParamDict of the
+    # right size as the identity element for summation.
+    meta_weights += (META_LR / len(weights)) * sum((w - meta_weights
+                                                    for w in weights), 0 * weights[0])
+    return meta_weights
 
     plot_task, a, b = gen_task()
     # need to put model on gpu first for tensors to have the right type

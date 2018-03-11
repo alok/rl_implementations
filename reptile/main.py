@@ -2,18 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from copy import deepcopy
-from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
-from test_tube import Experiment, HyperOptArgumentParser, HyperParamOptimizer
 from torch import nn
 from torch.autograd import Variable
 from torch.nn import Linear
-from torch.optim import SGD, Adam
-from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from utils import ParamDict
 

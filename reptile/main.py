@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -16,17 +17,18 @@ from utils import ParamDict
 # TODO Use CUDA if available.
 CUDA_AVAILABLE = torch.cuda.is_available()
 
+PLOT = True
 INPUT_SIZE = 1
 OUTPUT_SIZE = 1
 HIDDEN_SIZE = 64
 # BATCH_SIZE = 2**7
-BATCH_SIZE = 1
+BATCH_SIZE = 10
 EPOCHS = 1
 META_LR = 1e-1  # copycat
 META_EPOCHS = 30_000
-META_BATCH_SIZE = 3
+META_BATCH_SIZE = 1
 
-N = 10  # 10 ps on sine wave
+N = 50  # 50 ps on sine wave
 
 Weights = ParamDict
 
@@ -49,7 +51,9 @@ def gen_task(input_size=INPUT_SIZE) -> Task:
 
     # XXX Need size N,1 instead of N, to avoid auto conversion to DoubleTensor
     # later.
-    x = np.random.uniform(low=-5, high=5, size=(N, input_size))  # num of samples
+    # x = np.random.uniform(low=-5, high=5, size=(N, input_size))  # num of samples
+    # Produce 50 pts on sine wave
+    x = np.linspace(-5, 5, 50)[:, None]
     y = a * np.sin(x + b)
 
     dataset = TensorDataset(torch.from_numpy(x).float(), torch.from_numpy(y).float())
@@ -131,6 +135,7 @@ if __name__ == '__main__':
         weights = [SGD(meta_weights, k=EPOCHS) for _ in range(META_BATCH_SIZE)]
         # the mul by 0 is to get a paramdict of the right size as the start value for summation.
         # TODO implement custom optimizer that makes this work with Adam easily
+        META_LR *= 1 - i / META_EPOCHS  # linearly schedule meta-learning rate
         meta_weights = meta_weights + (META_LR / len(weights)) * sum(
             (w - meta_weights for w in weights), 0 * weights[0]
         )

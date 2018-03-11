@@ -11,11 +11,11 @@ from torch import Tensor, nn
 from torch.autograd import Variable
 from torch.nn import Linear
 from torch.optim import SGD
+from torch.utils.data import DataLoader, TensorDataset
 
 from utils import ParamDict as P
 
-Weights = ParamDict
-Task = DataLoader
+Weights = P
 criterion = F.mse_loss
 
 CUDA_AVAILABLE = torch.cuda.is_available()
@@ -122,91 +122,48 @@ def REPTILE(meta_weights: Weights, meta_batch_size=META_BATCH_SIZE, epochs=EPOCH
                                                     for w in weights), 0 * weights[0])
     return meta_weights
 
-    plot_task, a, b = gen_task()
-    # need to put model on gpu first for tensors to have the right type
-    meta_weights = ParamDict(cuda(Model()).state_dict())
-    x_all = cuda(Variable(torch.linspace(-5, 5, 50)[:, None]))
-    x_plot = x_all[torch.randperm(len(x_all))[:BATCH_SIZE]]
-    y_plot = a * torch.sin(x_plot + b)
-    y_all = a * torch.sin(x_all + b)
+
+if __name__ == '__main__':
+
+    plot_task = gen_task()  # Generate fixed task to evaluate on.
+    # Need to put model on GPU first for tensors to have the right type.
+    meta_weights = P(cuda(Model()).state_dict())
+
+    x_all, y_all = plot_task.dataset.data_tensor, plot_task.dataset.target_tensor
 
     for iteration in range(META_EPOCHS):
 
-        weights = [sgd(meta_weights, k=EPOCHS) for _ in range(META_BATCH_SIZE)]
-        # the mul by 0 is to get a paramdict of the right size as the start value for summation.
-        # TODO implement custom optimizer that makes this work with Adam easily
-        META_LR = META_LR_START * (1 - iteration / META_EPOCHS)  # linearly schedule meta-learning rate
-        meta_weights = meta_weights + (META_LR / len(weights)) * sum(
-            (w - meta_weights for w in weights), 0 * weights[0]
-        )
+        meta_weights = REPTILE(meta_weights)
 
-        if (iteration == 0 or (iteration + 1) % 1000) == 0:
-
-            if PLOT:
-                plt.cla()
-
-            # meta_weights_before = deepcopy(meta_weights)
+        if iteration == 0 or (iteration + 1) % 1000 == 0:
 
             model = cuda(Model(meta_weights))
             model.train()  # set train mode
             opt = SGD(model.parameters(), lr=LR)
 
-            task, a, b = gen_task()
+            for i in range(TEST_GRAD_STEPS):
+                # Training on all the points rather than just a sample works better.
+                train_batch(x_all, y_all, model, opt)
 
             if PLOT:
+                plt.cla()
+
                 plt.plot(
-                    x_all.data.numpy(),
-                    model(x_all).data.numpy(),
-                    label="pred after 0",
-                    color=(0, 0, 1)
+                    x_all.numpy(),
+                    model(Variable(x_all)).data.numpy(),
+                    label=f"Pred after {i+1} gradient steps.",
+                    color=(1, 0, 0),
                 )
 
-            for i, (x, y) in enumerate(task):
-                x, y = cuda(Variable(x)), cuda(Variable(y))
-
-                preds = model(x)
-                loss = criterion(preds, y)
-                print(float(loss))
-                opt.zero_grad()
-                loss.backward()
-                opt.step()
-
-                if (i + 1) % 1 == 0:
-                    frac = (i + 1) / len(task)
-
-                    if PLOT:
-                        plt.plot(
-                            x_all.data.numpy(),
-                            model(x_all).data.numpy(),
-                            label=f"pred after {i+1}",
-                            color=(frac, 0, 1 - frac),
-                        )
-
-            if PLOT:
                 plt.plot(
-                    x_all.data.numpy(),
-                    y_all.data.numpy(),
-                    label="true",
+                    x_all.numpy(),
+                    y_all.numpy(),
+                    label="True",
                     color=(0, 1, 0),
                 )
-                plt.plot(
-                    x_plot.data.numpy(),
-                    y_plot.data.numpy(),
-                    "x",
-                    label="train",
-                    color="k",
-                )
 
-            if PLOT:
                 plt.ylim(-4, 4)
                 plt.legend(loc="lower right")
                 plt.pause(0.01)
 
-            # test model
-            print(evaluate(model, plot_task))
-
-            # model.load_state_dict(meta_weights_before)  # restore from snapshot
-
-            print(72 * '-')
-            print(f"iteration               {iteration+1}")
-            print(f"loss on plotted curve   {float(loss):.3f}")
+            print(f'Iteration: {iteration+1}\tLoss: {evaluate(model, plot_task):.3f}')

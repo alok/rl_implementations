@@ -3,13 +3,12 @@
 import operator
 import random
 from collections import OrderedDict
-from copy import deepcopy
-from numbers import Number
 from typing import NamedTuple
 
 import numpy as np
 import torch
 from torch.autograd import Variable
+from torch.distributions import Number  # Somehow more robust than the std lib.
 
 
 class Step(NamedTuple):
@@ -30,8 +29,7 @@ class ReplayBuffer(list):
         super().__init__(*args, **kwargs)
         self.buffer_size = buffer_size
 
-    def append(self, transition):
-
+    def append(self, transition) -> None:
         if len(self) < self.buffer_size:
             super().append(transition)
         else:
@@ -43,6 +41,9 @@ class ReplayBuffer(list):
 
 
 class ParamDict(OrderedDict):
+    """A dictionary where the values are Tensors, meant to represent weights of
+    a model. This subclass lets you perform arithmetic on weights directly."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 

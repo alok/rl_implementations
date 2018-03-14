@@ -18,4 +18,4 @@ performance, indicating that meta-learning is actually working.
 
     python3 main.py
 
-It will pop up a matplotlib window that updates every 1,000 iterations.
+It will pop up a matplotlib window that updates every 3,000 iterations.

@@ -134,7 +134,7 @@ def REPTILE(
     # TODO Implement custom optimizer that makes this work with builtin
     # optimizers easily. The multiplication by 0 is to get a ParamDict of the
     # right size as the identity element for summation.
-    meta_weights += (META_LR / epochs) * sum((w - meta_weights for w in weights), 0 * weights[0])
+    meta_weights += (META_LR / epochs) * sum((w - meta_weights for w in weights), 0 * meta_weights)
     return meta_weights
 
 

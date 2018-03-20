@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import operator
 import random
 from collections import OrderedDict
-from numbers import Number
 from typing import NamedTuple
 
 import numpy as np
 import torch
 from torch.autograd import Variable
+from torch.distributions import Number  # Somehow more robust than the std lib.
 
 
 class Step(NamedTuple):
@@ -28,8 +29,7 @@ class ReplayBuffer(list):
         super().__init__(*args, **kwargs)
         self.buffer_size = buffer_size
 
-    def append(self, transition):
-
+    def append(self, transition) -> None:
         if len(self) < self.buffer_size:
             super().append(transition)
         else:
@@ -41,20 +41,36 @@ class ReplayBuffer(list):
 
 
 class ParamDict(OrderedDict):
+    """A dictionary where the values are Tensors, meant to represent weights of
+    a model. This subclass lets you perform arithmetic on weights directly."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
-    def __add__(self, other):
-        if isinstance(other, dict):
-            assert other.keys() == self.keys()
-            return ParamDict({k: self[k] + other[k] for k in self})
+    def _prototype(self, other, op):
+        if isinstance(other, Number):
+            return ParamDict({k: op(v, other) for k, v in self.items()})
+        elif isinstance(other, dict):
+            return ParamDict({k: op(self[k], other[k]) for k in self})
         else:
-            return NotImplementedError
+            return NotImplemented
+
+    def __add__(self, other):
+        return self._prototype(other, operator.add)
 
     def __rmul__(self, other):
-        if isinstance(other, Number):
-            return ParamDict({k: other * v for k, v in self.items()})
-        else:
-            return NotImplementedError
+        return self._prototype(other, operator.mul)
 
     __mul__ = __rmul__
+
+    def __neg__(self):
+        return ParamDict({k: -v for k, v in self.items()})
+
+    def __rsub__(self, other):
+        # a- b := a + (-b)
+        return self.__add__(other.__neg__())
+
+    __sub__ = __rsub__
+
+    def __truediv__(self, other):
+        return self._prototype(other, operator.truediv)

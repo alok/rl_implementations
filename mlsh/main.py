@@ -9,6 +9,7 @@ import gym
 import numpy as np
 import torch
 import torch.nn.functional as F
+from test_tube import Experiment, HyperOptArgumentParser, HyperParamOptimizer
 from torch import distributions, nn
 from torch.autograd import Variable
 from torch.nn import Linear
@@ -19,23 +20,36 @@ from utils import ReplayBuffer, Step, np_to_var
 # In paper, ant was dropped into 9 envs, but its S,A were same. No transfer
 # learning yet.
 
+exp = Experiment('meta learning shared hierarchies', save_dir='logs')
+
+parser = HyperOptArgumentParser(strategy='random_search')
+parser.opt_list(
+    '--batch_size',
+    default=128,
+    type=int,
+    tunable=True,
+    options=[2**n for n in range(5, 10)],
+)
+
+args = parser.parse_args()
+
+args.max_steps = 1_000
+args.subpolicy_duration = 200
+args.num_policies = 10
+args.max_buffer_size = 1_000_000
+args.env_names = ['Ant-v2']
+
+exp.argparse(args)
+
 State = Any
 Action = Any
 Timestep = int
-
-MAX_STEPS: Timestep = 1_000
-SUBPOLICY_DURATION: Timestep = 200
-NUM_POLICIES = 10
-MAX_BUFFER_SIZE = 10**6
-BATCH_SIZE = 128
-
-env_names = ['Ant-v2']
 
 
 class MasterPolicy(nn.Module):
     """Returns categorical distribution over subpolicies."""
 
-    def __init__(self, state_size, hidden_size, output_size=NUM_POLICIES):
+    def __init__(self, state_size, hidden_size, output_size=args.num_policies):
         super().__init__()
         S, H, O = state_size, hidden_size, output_size
         self.fc1 = Linear(S, H)
@@ -78,7 +92,7 @@ class Policy(nn.Module):
 # TODO warmup for some number of timesteps
 
 
-def rollout(env, start_state: State, policy, buffer, num_steps=SUBPOLICY_DURATION) -> None:
+def rollout(env, start_state: State, policy, buffer, num_steps=args.subpolicy_duration) -> None:
     s = start_state
 
     for i in range(num_steps):
@@ -93,7 +107,7 @@ def rollout(env, start_state: State, policy, buffer, num_steps=SUBPOLICY_DURATIO
 
 if __name__ == '__main__':
 
-    envs = [gym.make(env) for env in env_names]
+    envs = [gym.make(env) for env in args.env_names]
     # TODO assert that all envs have same state and action spaces
     # Start with random env
     for env in envs:
@@ -104,17 +118,17 @@ if __name__ == '__main__':
     A = int(np.prod(env.action_space.shape))
     H = hidden_size = 50
 
-    policies = [Policy(S, H, A) for _ in range(NUM_POLICIES)]
+    policies = [Policy(S, H, A) for _ in range(args.num_policies)]
 
-    buffer = ReplayBuffer(MAX_BUFFER_SIZE)
+    buffer = ReplayBuffer(args.max_buffer_size)
 
     s = env.reset()
 
-    master = MasterPolicy(S, H, NUM_POLICIES)
+    master = MasterPolicy(S, H, args.num_policies)
     P = master(np_to_var(s))
 
     for t in itertools.count():
         # pick new subpolicy every X steps
-        if t % SUBPOLICY_DURATION == 0:
+        if t % args.subpolicy_duration == 0:
             policy = policies[int(P.sample())]
-        rollout(env, s, policy, buffer, SUBPOLICY_DURATION)
+        rollout(env, s, policy, buffer, args.subpolicy_duration)

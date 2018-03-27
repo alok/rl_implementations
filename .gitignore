@@ -6,3 +6,7 @@ min_case.py
 log
 logs
 **/.ipynb_checkpoints/
+tmp*.json
+tmp*.html
+trace_viewer_full.html
+

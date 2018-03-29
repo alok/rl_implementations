@@ -54,7 +54,7 @@ def gen_task(num_pts=N) -> DataLoader:
     # Need to make x N,1 instead of N, to avoid
     # https://discuss.pytorch.org/t/dataloader-gives-double-instead-of-float
     x = linspace(-5, 5, num_pts)[:, None].float()
-    y = a * sin(x + b).float()
+    y = a * sin(x + b)
 
     dataset = TensorDataset(x, y)
 

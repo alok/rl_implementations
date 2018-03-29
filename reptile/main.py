@@ -129,6 +129,7 @@ def REPTILE(
     epochs: int = EPOCHS,
 ) -> Weights:
     """Run one iteration of REPTILE."""
+
     weights = [sgd(meta_weights, epochs) for _ in range(meta_batch_size)]
 
     # TODO Implement custom optimizer that makes this work with builtin
@@ -187,7 +188,7 @@ if __name__ == '__main__':
             if PLOT:
 
                 ax.set_title(f'REPTILE after {iteration:n} iterations')
-                curve, = ax.plot(
+                (curve, ) = ax.plot(
                     x_all.numpy(),
                     model(Variable(x_all)).data.numpy(),
                     label=f'Pred after {TEST_GRAD_STEPS} gradient steps.',

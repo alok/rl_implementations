@@ -3,7 +3,6 @@
 
 from copy import deepcopy
 
-import matplotlib.pyplot as plt
 import numpy as np
 import ray
 import torch
@@ -15,6 +14,14 @@ from torch.optim import SGD
 from torch.utils.data import DataLoader, TensorDataset
 
 from utils import ParamDict as P
+
+# To avoid tkinter not installed error on headless server
+try:
+    import matplotlib
+    matplotlib.use('AGG')
+    import matplotlib.pyplot as plt
+except:
+    pass
 
 Weights = P
 criterion = F.mse_loss
@@ -103,7 +110,9 @@ def evaluate(model: Model, task: DataLoader, criterion=criterion) -> float:
     """Evaluate model on all the task data at once."""
     model.eval()
 
-    x, y = cuda(Variable(task.dataset.data_tensor)), cuda(Variable(task.dataset.target_tensor))
+    x, y = cuda(Variable(task.dataset.data_tensor)), cuda(
+        Variable(task.dataset.target_tensor)
+    )
     loss = criterion(model(x), y)
     return float(loss)
 
@@ -151,34 +160,35 @@ if __name__ == '__main__':
         print(e)
 
     # Need to put model on GPU first for tensors to have the right type.
-
-    # Generate fixed task to evaluate on.
-    plot_task = gen_task()
-
-    x_all, y_all = plot_task.dataset.data_tensor, plot_task.dataset.target_tensor
-    x_plot, y_plot = shuffle(x_all, y_all, length=10)
-
-    # Set up plot
-    fig, ax = plt.subplots()
-    true_curve = ax.plot(
-        x_all.numpy(),
-        y_all.numpy(),
-        label='True',
-        color='g',
-    )
-
-    ax.plot(
-        x_plot.numpy(),
-        y_plot.numpy(),
-        'x',
-        label='Training points',
-        color='k',
-    )
-
-    ax.legend(loc="lower right")
-    ax.set_xlim(-5, 5)
-    ax.set_ylim(-5, 5)
     meta_weights = cuda(Model()).state_dict()
+
+    if PLOT:
+        # Generate fixed task to evaluate on.
+        plot_task = gen_task()
+
+        x_all, y_all = plot_task.dataset.data_tensor, plot_task.dataset.target_tensor
+        x_plot, y_plot = shuffle(x_all, y_all, length=10)
+
+        # Set up plot
+        fig, ax = plt.subplots()
+        true_curve = ax.plot(
+            x_all.numpy(),
+            y_all.numpy(),
+            label='True',
+            color='g',
+        )
+
+        ax.plot(
+            x_plot.numpy(),
+            y_plot.numpy(),
+            'x',
+            label='Training points',
+            color='k',
+        )
+
+        ax.legend(loc="lower right")
+        ax.set_xlim(-5, 5)
+        ax.set_ylim(-5, 5)
 
     for iteration in range(1, META_EPOCHS + 1):
 
@@ -191,23 +201,19 @@ if __name__ == '__main__':
             opt = SGD(model.parameters(), lr=LR)
 
             for _ in range(TEST_GRAD_STEPS):
-                # Training on all the points rather than just a sample works better.
                 train_batch(x_plot, y_plot, model, opt)
 
             if PLOT:
 
-                ax.set_title(f'REPTILE after {iteration:n} iterations')
+                ax.set_title(f'REPTILE after {iteration:n} iterations.')
                 curve, = ax.plot(
                     x_all.numpy(),
                     model(Variable(x_all)).data.numpy(),
-                    label=f'Pred after {TEST_GRAD_STEPS} gradient steps.',
+                    label=f'Pred after {TEST_GRAD_STEPS:n} gradient steps.',
                     color='r',
                 )
 
                 plt.savefig(f'figs/{iteration}.png')
-
-                # Pause before clearing and moving on to next plot.
-                plt.pause(0.01)
 
                 ax.lines.remove(curve)
 

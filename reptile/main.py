@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 from copy import deepcopy
 
 import numpy as np
@@ -67,11 +68,11 @@ def gen_task(num_pts=N) -> DataLoader:
     dataset = TensorDataset(x, y)
 
     loader = DataLoader(
-            dataset,
-            batch_size=BATCH_SIZE,
-            shuffle=True,
-            pin_memory=CUDA_AVAILABLE,
-            )
+        dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        pin_memory=CUDA_AVAILABLE,
+    )
 
     return loader
 
@@ -111,8 +112,8 @@ def evaluate(model: Model, task: DataLoader, criterion=criterion) -> float:
     model.eval()
 
     x, y = cuda(Variable(task.dataset.data_tensor)), cuda(
-            Variable(task.dataset.target_tensor)
-            )
+        Variable(task.dataset.target_tensor)
+    )
     loss = criterion(model(x), y)
     return float(loss)
 
@@ -135,21 +136,21 @@ def sgd(meta_weights: Weights, epochs: int) -> Weights:
 
 
 def REPTILE(
-        meta_weights: Weights,
-        meta_batch_size: int = META_BATCH_SIZE,
-        epochs: int = EPOCHS,
-        ) -> Weights:
+    meta_weights: Weights,
+    meta_batch_size: int = META_BATCH_SIZE,
+    epochs: int = EPOCHS,
+) -> Weights:
     """Run one iteration of REPTILE."""
     weights = ray.get([
         sgd.remote(meta_weights, epochs) for _ in range(meta_batch_size)
-        ])
+    ])
     weights = [P(w) for w in weights]
 
     # TODO Implement custom optimizer that makes this work with builtin
     # optimizers easily. The multiplication by 0 is to get a ParamDict of the
     # right size as the identity element for summation.
     meta_weights += (META_LR / epochs) * sum((w - meta_weights
-        for w in weights), 0 * meta_weights)
+                                              for w in weights), 0 * meta_weights)
     return meta_weights
 
 
@@ -172,19 +173,19 @@ if __name__ == '__main__':
         # Set up plot
         fig, ax = plt.subplots()
         true_curve = ax.plot(
-                x_all.numpy(),
-                y_all.numpy(),
-                label='True',
-                color='g',
-                )
+            x_all.numpy(),
+            y_all.numpy(),
+            label='True',
+            color='g',
+        )
 
         ax.plot(
-                x_plot.numpy(),
-                y_plot.numpy(),
-                'x',
-                label='Training points',
-                color='k',
-                )
+            x_plot.numpy(),
+            y_plot.numpy(),
+            'x',
+            label='Training points',
+            color='k',
+        )
 
         ax.legend(loc="lower right")
         ax.set_xlim(-5, 5)
@@ -207,15 +208,15 @@ if __name__ == '__main__':
 
                 ax.set_title(f'REPTILE after {iteration:n} iterations.')
                 curve, = ax.plot(
-                        x_all.numpy(),
-                        model(Variable(x_all)).data.numpy(),
-                        label=f'Pred after {TEST_GRAD_STEPS:n} gradient steps.',
-                        color='r',
-                        )
+                    x_all.numpy(),
+                    model(Variable(x_all)).data.numpy(),
+                    label=f'Pred after {TEST_GRAD_STEPS:n} gradient steps.',
+                    color='r',
+                )
 
+                os.makedirs('figs', exist_ok=True)
                 plt.savefig(f'figs/{iteration}.png')
 
                 ax.lines.remove(curve)
 
             print(f'Iteration: {iteration}\tLoss: {evaluate(model, plot_task):.3f}')
-

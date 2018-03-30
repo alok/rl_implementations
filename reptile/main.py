@@ -5,6 +5,7 @@ from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
+import ray
 import torch
 import torch.nn.functional as F
 from torch import Tensor, linspace, nn, randperm, sin
@@ -25,7 +26,7 @@ INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE = 1, 64, 1
 N = 50  # Use 50 evenly spaced points on sine wave.
 
 LR, META_LR = 0.02, 0.1  # Copy OpenAI's hyperparameters.
-BATCH_SIZE, META_BATCH_SIZE = 10, 1
+BATCH_SIZE, META_BATCH_SIZE = 10, 3
 EPOCHS, META_EPOCHS = 1, 30_000
 TEST_GRAD_STEPS = 2**3
 PLOT_EVERY = 3_000
@@ -107,6 +108,7 @@ def evaluate(model: Model, task: DataLoader, criterion=criterion) -> float:
     return float(loss)
 
 
+@ray.remote
 def sgd(meta_weights: Weights, epochs: int) -> Weights:
     """Run SGD on a randomly generated task."""
 
@@ -120,7 +122,7 @@ def sgd(meta_weights: Weights, epochs: int) -> Weights:
         for x, y in task:
             train_batch(x, y, model, opt)
 
-    return P(model.state_dict())
+    return model.state_dict()
 
 
 def REPTILE(
@@ -129,19 +131,26 @@ def REPTILE(
     epochs: int = EPOCHS,
 ) -> Weights:
     """Run one iteration of REPTILE."""
-    weights = [sgd(meta_weights, epochs) for _ in range(meta_batch_size)]
+    weights = ray.get([
+        sgd.remote(meta_weights, epochs) for _ in range(meta_batch_size)
+    ])
+    weights = [P(w) for w in weights]
 
     # TODO Implement custom optimizer that makes this work with builtin
     # optimizers easily. The multiplication by 0 is to get a ParamDict of the
     # right size as the identity element for summation.
-    meta_weights += (META_LR / epochs) * sum((w - meta_weights for w in weights), 0 * meta_weights)
+    meta_weights += (META_LR / epochs) * sum((w - meta_weights
+                                              for w in weights), 0 * meta_weights)
     return meta_weights
 
 
 if __name__ == '__main__':
+    try:
+        ray.init()
+    except Exception as e:
+        print(e)
 
     # Need to put model on GPU first for tensors to have the right type.
-    meta_weights = P(cuda(Model()).state_dict())
 
     # Generate fixed task to evaluate on.
     plot_task = gen_task()
@@ -169,10 +178,11 @@ if __name__ == '__main__':
     ax.legend(loc="lower right")
     ax.set_xlim(-5, 5)
     ax.set_ylim(-5, 5)
+    meta_weights = cuda(Model()).state_dict()
 
     for iteration in range(1, META_EPOCHS + 1):
 
-        meta_weights = REPTILE(meta_weights)
+        meta_weights = REPTILE(P(meta_weights))
 
         if iteration == 1 or iteration % PLOT_EVERY == 0:
 

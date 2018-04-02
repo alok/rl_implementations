@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils import ParamDict as P
 
 Weights = P
-criterion = F.mse_loss
+criterion = F.l1_loss
 
 CUDA_AVAILABLE = torch.cuda.is_available()
 
@@ -93,7 +93,8 @@ def train_batch(x: Tensor, y: Tensor, model: Model, opt) -> None:
     """Statefully train model on single batch."""
     x, y = cuda(Variable(x)), cuda(Variable(y))
 
-    loss = criterion(model(x), y)
+    # TODO figure out why ray breaks if I just declare criterion at the top.
+    loss = F.mse_loss(model(x), y)
 
     opt.zero_grad()
     loss.backward()

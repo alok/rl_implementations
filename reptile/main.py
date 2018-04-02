@@ -4,6 +4,7 @@
 import os
 from copy import deepcopy
 
+import matplotlib.pyplot as plt
 import numpy as np
 import ray
 import torch
@@ -15,14 +16,6 @@ from torch.optim import SGD
 from torch.utils.data import DataLoader, TensorDataset
 
 from utils import ParamDict as P
-
-# To avoid tkinter not installed error on headless server
-try:
-    import matplotlib
-    matplotlib.use('AGG')
-    import matplotlib.pyplot as plt
-except:
-    pass
 
 Weights = P
 criterion = F.mse_loss

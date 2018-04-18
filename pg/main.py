@@ -24,7 +24,9 @@ NUM_EPISODES = args.iterations
 
 env = gym.make(args.env)
 
-state_size, action_size = int(np.prod(env.observation_space.shape)), int(env.action_space.n)
+state_size = int(np.prod(env.observation_space.shape))
+action_size = int(env.action_space.n)
+
 hidden_size = 50
 
 S, A, H = state_size, action_size, hidden_size
@@ -79,8 +81,12 @@ if __name__ == '__main__':
 
             s = succ
 
-        discounted_rewards = [pow(DISCOUNT, t) * r for t, r in enumerate(rewards)]
-        cumulative_returns = [G(discounted_rewards, t) for t in range(len(discounted_rewards))]
+        discounted_rewards = [
+            pow(DISCOUNT, t) * r for t, r in enumerate(rewards)
+        ]
+        cumulative_returns = [
+            G(discounted_rewards, t) for t in range(len(discounted_rewards))
+        ]
 
         states = torch.stack(states).cuda()
         state_values = critic(states).view(-1)
@@ -106,4 +112,7 @@ if __name__ == '__main__':
 
     # turn into list of lists
     stats = [list(x) for x in zip(*stats)]
-    print(DISCOUNT, len([r for r in stats[1] if r >= env.spec.reward_threshold]))
+    print(
+        DISCOUNT,
+        len([r for r in stats[1] if r >= env.spec.reward_threshold]),
+    )

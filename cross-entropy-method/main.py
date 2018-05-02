@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import gym
 from torch.distributions import Normal
 
 mean, std = 0, 1
@@ -15,6 +16,16 @@ for t in range(ITERS):
     X, _ = X.sort(dim=0, descending=False)  # swap descending to min/max objective
     elite = X[:n]
     mean, std = elite.mean(), elite.std()
+
+# env = gym.make('CartPole-v0')
+env = gym.make('MountainCarContinuous-v0')
+
+s, done = env.reset(), False
+
+while not done:
+    a = Normal(mean, std).sample()
+    succ, r, done, _ = env.step(a.numpy())
+
 
 if __name__ == '__main__':
     print(mean, std)

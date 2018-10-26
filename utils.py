@@ -16,6 +16,7 @@ from torch.autograd import Variable
 
 class Step(NamedTuple):
     """One step of a rollout."""
+
     state: Variable
     action: Variable
     reward: float

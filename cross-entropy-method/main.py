@@ -18,7 +18,7 @@ for t in range(ITERS):
     mean, std = elite.mean(), elite.std()
 
 # env = gym.make('CartPole-v0')
-env = gym.make('MountainCarContinuous-v0')
+env = gym.make("MountainCarContinuous-v0")
 
 s, done = env.reset(), False
 
@@ -27,5 +27,5 @@ while not done:
     succ, r, done, _ = env.step(a.numpy())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(mean, std)

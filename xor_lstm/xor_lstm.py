@@ -43,7 +43,9 @@ def gen_data(seq_len=MAX_SEQ_LEN, batch_size=BATCH_SIZE, input_dim=D):
     # the result to get the labels in the right order when flattened.
     ys = np.stack([foldr(xs[:, i, 0], OP) for i in range(xs.shape[1])], axis=-1)
 
-    xs = Variable(torch.from_numpy(xs).float())  # Binary data needs to be cast to float.
+    xs = Variable(
+        torch.from_numpy(xs).float()
+    )  # Binary data needs to be cast to float.
     ys = Variable(torch.from_numpy(ys).long())
 
     return (xs.cuda(), ys.cuda()) if CUDA_AVAILABLE else (xs, ys)
@@ -57,11 +59,7 @@ class Model(nn.Module):
         # issue only really found in such small problems.
         H = 20
 
-        self.lstm = nn.LSTM(
-            input_size=1,
-            hidden_size=H,
-            num_layers=2,
-        )
+        self.lstm = nn.LSTM(input_size=1, hidden_size=H, num_layers=2)
         self.fc = Linear(H, C)
 
     def forward(self, x):
@@ -75,7 +73,7 @@ def argmax(tensor, dim=1):
 
 
 # Hack to check if we've already trained a model (assumed to be a good one.
-model_path = Path(f'model-{OP.__name__}' + ('cuda' if CUDA_AVAILABLE else '') + '.pth')
+model_path = Path(f"model-{OP.__name__}" + ("cuda" if CUDA_AVAILABLE else "") + ".pth")
 
 test_mode = model_path.exists()
 train_mode = not test_mode
@@ -89,7 +87,7 @@ else:
     model = Model().cuda() if CUDA_AVAILABLE else Model()
     model.train()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     criterion = F.cross_entropy
     optimizer = optim.Adam(model.parameters())
@@ -100,10 +98,7 @@ if __name__ == '__main__':
         seq_len = np.random.randint(low=1, high=MAX_SEQ_LEN + 1)
         batch_size = BATCH_SIZE
 
-        xs, ys = gen_data(
-            seq_len=seq_len,
-            batch_size=batch_size,
-        )
+        xs, ys = gen_data(seq_len=seq_len, batch_size=batch_size)
 
         predictions = model(xs)
 
@@ -111,20 +106,20 @@ if __name__ == '__main__':
 
         if i % (N // 200) == 0:
             print(
-                f'Iteration: {i}',
-                f'Length: {seq_len}',
-                f'Loss: {float(loss)}',
-                sep=' | ',
+                f"Iteration: {i}",
+                f"Length: {seq_len}",
+                f"Loss: {float(loss)}",
+                sep=" | ",
             )
 
         # Stop early.
         if train_mode and float(loss) < 1e-6:
-            print(72 * '-')
+            print(72 * "-")
             print(
-                f'Iteration: {i}',
-                f'Length: {seq_len}',
-                f'Loss: {float(loss)}',
-                sep=' | ',
+                f"Iteration: {i}",
+                f"Length: {seq_len}",
+                f"Loss: {float(loss)}",
+                sep=" | ",
             )
 
             break

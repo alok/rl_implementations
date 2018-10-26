@@ -35,7 +35,6 @@ for i in range(args.iterations):
 
         a = epsilon_greedy(s, epsilon=epsilon)
 
-
         succ, r, done, _ = env.step(a)
         replay_buffer.append([s, a, r, succ, done])
 
@@ -55,5 +54,5 @@ for i in range(args.iterations):
                 param.grad.data.clamp_(-1, 1)
             optimizer.step()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

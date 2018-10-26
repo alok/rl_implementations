@@ -57,7 +57,9 @@ def train(buffer, Q):
     td_estimates = Q(states)
     best_succ_qval, _argmaxes = Q(succs).max(1)
 
-    for s, (_, a, r, succ, done) in enumerate(zip(states, actions, rewards, best_succ_qval, dones)):
+    for s, (_, a, r, succ, done) in enumerate(
+        zip(states, actions, rewards, best_succ_qval, dones)
+    ):
         if done:
             td_estimates[s, a] = r
         else:
@@ -67,5 +69,5 @@ def train(buffer, Q):
     return states, td_estimates
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

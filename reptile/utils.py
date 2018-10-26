@@ -7,21 +7,22 @@ from typing import NamedTuple
 
 import numpy as np
 import torch
-from torch.autograd import Variable
-from torch.distributions import Number  # Somehow more robust than the std lib.
+from torch.autograd import Tensor
+from numbers import Number
 
 
 class Step(NamedTuple):
     """One step of a rollout."""
-    state: Variable
-    action: Variable
+
+    state: Tensor
+    action: Tensor
     reward: float
-    succ_state: Variable
+    succ_state: Tensor
     done: bool
 
 
-def np_to_var(arr: np.ndarray) -> Variable:
-    return Variable(torch.from_numpy(arr).float())
+def np_to_var(arr: np.ndarray) -> Tensor:
+    return torch.from_numpy(arr).float()
 
 
 class ReplayBuffer(list):
@@ -53,7 +54,7 @@ class ParamDict(OrderedDict):
         elif isinstance(other, dict):
             return ParamDict({k: op(self[k], other[k]) for k in self})
         else:
-            return NotImplemented
+            raise NotImplementedError
 
     def __add__(self, other):
         return self._prototype(other, operator.add)

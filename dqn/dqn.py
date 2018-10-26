@@ -13,7 +13,7 @@ from torch.nn import functional as F
 
 from lib.replay_buffer import ReplayBuffer
 
-BUFFER_SIZE = 10**6
+BUFFER_SIZE = 10 ** 6
 BATCH_SIZE = 128
 GAMMA = 0.99
 NUM_EPISODES = 1000
@@ -22,7 +22,7 @@ EPS_START = 0.999
 EPS_END = 0.01
 EPS_DECAY = 200
 
-env = gym.make('CartPole-v0')
+env = gym.make("CartPole-v0")
 
 
 def generate_epsilon(step):
@@ -116,5 +116,5 @@ def main():
             )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

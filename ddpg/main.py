@@ -18,36 +18,32 @@ from torch.optim import Adam
 
 from utils import ParamDict, ReplayBuffer, Step, np_to_var
 
-exp = Experiment(
-    name='ddpg',
-    debug=False,
-    save_dir='logs',
-)
+exp = Experiment(name="ddpg", debug=False, save_dir="logs")
 
-parser = HyperOptArgumentParser(strategy='random_search')
+parser = HyperOptArgumentParser(strategy="random_search")
 
-parser.add_argument('--buffer_size', default=1_000_000, type=int)
-parser.add_argument('--num_steps', default=100_000, type=int)
-parser.add_argument('--hidden_size', default=50, type=int)
+parser.add_argument("--buffer_size", default=1_000_000, type=int)
+parser.add_argument("--num_steps", default=100_000, type=int)
+parser.add_argument("--hidden_size", default=50, type=int)
 
 parser.add_opt_argument_list(
-    '--batch_size',
+    "--batch_size",
     default=64,
     type=int,
     tunnable=True,
-    options=[2**i for i in range(5, 9)],
+    options=[2 ** i for i in range(5, 9)],
 )
 
 parser.add_opt_argument_list(
-    '--discount',
+    "--discount",
     default=0.995,
     type=float,
     tunnable=True,
-    options=[.9, .99, .995, .999],
+    options=[0.9, 0.99, 0.995, 0.999],
 )
 
 parser.add_opt_argument_range(
-    '--target_update',
+    "--target_update",
     default=100,
     type=int,
     tunnable=True,
@@ -57,17 +53,12 @@ parser.add_opt_argument_range(
 )
 
 parser.add_opt_argument_range(
-    '--noise_factor',
-    default=1,
-    type=float,
-    start=0,
-    end=1,
-    nb_samples=5,
+    "--noise_factor", default=1, type=float, start=0, end=1, nb_samples=5
 )
 
 hparams = parser.parse_args()
 
-env = gym.make('Pendulum-v0')
+env = gym.make("Pendulum-v0")
 
 state_size = int(np.prod(env.observation_space.shape))
 action_size = int(np.prod(env.action_space.shape))
@@ -75,11 +66,7 @@ action_size = int(np.prod(env.action_space.shape))
 S, A = state_size, action_size
 H = hparams.hidden_size
 
-exp.add_metric_row({
-    'S': state_size,
-    'A': action_size,
-    'H': hparams.hidden_size,
-})
+exp.add_metric_row({"S": state_size, "A": action_size, "H": hparams.hidden_size})
 
 
 class Critic(nn.Module):
@@ -147,7 +134,8 @@ for hparam in hparams.trials(5):
     exp.add_argparse_meta(hparam)
     for timestep in range(hparam.num_steps):
         noise = Normal(
-            mean=Variable(torch.zeros(A)), std=hparam.noise_factor * Variable(torch.ones(A))
+            mean=Variable(torch.zeros(A)),
+            std=hparam.noise_factor * Variable(torch.ones(A)),
         )
 
         if timestep % 1000 == 0:
@@ -161,10 +149,7 @@ for hparam in hparams.trials(5):
         s = np_to_var(env.reset()) if done else succ
         if done:
 
-            exp.add_metric_row({
-                'Timestep': timestep + 1,
-                'Loss': -sum(rews),
-            })
+            exp.add_metric_row({"Timestep": timestep + 1, "Loss": -sum(rews)})
 
             rews = []
 

@@ -13,6 +13,7 @@ from torch.distributions import Number  # Somehow more robust than the std lib.
 
 class Step(NamedTuple):
     """One step of a rollout."""
+
     state: Variable
     action: Variable
     reward: float

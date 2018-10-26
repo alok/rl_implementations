@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import itertools
+
 # 2 layers
 import operator
 
@@ -33,13 +34,9 @@ def argmax(tensor, dim=1):
 
 H = 8
 
-model = Sequential(
-    Linear(2, H),
-    ReLU(),
-    Linear(H, 2),
-)
+model = Sequential(Linear(2, H), ReLU(), Linear(H, 2))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     criterion = F.cross_entropy
     optimizer = optim.Adam(model.parameters())

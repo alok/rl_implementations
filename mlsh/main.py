@@ -20,24 +20,24 @@ from utils import ReplayBuffer, Step, np_to_var
 # In paper, ant was dropped into 9 envs, but its S,A were same. No transfer
 # learning yet.
 
-exp = Experiment('meta learning shared hierarchies', save_dir='logs')
+exp = Experiment("meta learning shared hierarchies", save_dir="logs")
 
-parser = HyperOptArgumentParser(strategy='random_search')
+parser = HyperOptArgumentParser(strategy="random_search")
 parser.opt_list(
-    '--batch_size',
+    "--batch_size",
     default=128,
     type=int,
     tunable=True,
-    options=[2**n for n in range(5, 10)],
+    options=[2 ** n for n in range(5, 10)],
 )
 
 args = parser.parse_args()
 
-args.max_steps = 1_000
+args.max_steps = 1000
 args.subpolicy_duration = 200
 args.num_policies = 10
 args.max_buffer_size = 1_000_000
-args.env_names = ['Ant-v2']
+args.env_names = ["Ant-v2"]
 
 exp.argparse(args)
 
@@ -92,7 +92,9 @@ class Policy(nn.Module):
 # TODO warmup for some number of timesteps
 
 
-def rollout(env, start_state: State, policy, buffer, num_steps=args.subpolicy_duration) -> None:
+def rollout(
+    env, start_state: State, policy, buffer, num_steps=args.subpolicy_duration
+) -> None:
     s = start_state
 
     for i in range(num_steps):
@@ -105,7 +107,7 @@ def rollout(env, start_state: State, policy, buffer, num_steps=args.subpolicy_du
         s = np_to_var(env.reset()) if done else succ
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     envs = [gym.make(env) for env in args.env_names]
     # TODO assert that all envs have same state and action spaces

@@ -33,6 +33,6 @@ def decay_exploration(i, epsilon=epsilon):
     return epsilon
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass
     print(epsilon_greedy(env.observation_space.sample()))

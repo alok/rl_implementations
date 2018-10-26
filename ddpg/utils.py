@@ -12,6 +12,7 @@ from torch.autograd import Variable
 
 class Step(NamedTuple):
     """One step of a rollout."""
+
     state: Variable
     action: Variable
     reward: float
@@ -66,6 +67,5 @@ class ParamDict(OrderedDict):
 
     def __neg__(self):
         return ParamDict({k: -v for k, v in self.items()})
-
 
     __mul__ = __rmul__

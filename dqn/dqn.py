@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import random
-from copy import deepcopy
 
 import gym
 import numpy as np
@@ -50,10 +49,11 @@ class Model(nn.Module):
 
         S = self.state_size = int(np.product(env.observation_space.shape))
         A = self.action_size = env.action_space.n
+        H = 50
 
-        self.fc1 = nn.Linear(S, 50)
-        self.fc2 = nn.Linear(50, 50)
-        self.fc3 = nn.Linear(50, A)
+        self.fc1 = nn.Linear(S, H)
+        self.fc2 = nn.Linear(H, H)
+        self.fc3 = nn.Linear(H, A)
 
         self.loss = nn.functional.mse_loss
         self.opt = torch.optim.Adam(self.parameters())

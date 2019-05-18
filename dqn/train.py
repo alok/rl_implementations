@@ -67,7 +67,3 @@ def train(buffer, Q):
 
     states.volatile, td_estimates.volatile = False, False
     return states, td_estimates
-
-
-if __name__ == "__main__":
-    pass

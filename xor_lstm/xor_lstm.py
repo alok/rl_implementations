@@ -9,9 +9,10 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from torch import Tensor, nn
+from torch import nn
 from torch.autograd import Variable
 from torch.nn import Linear, ReLU, Softmax
+
 
 CUDA_AVAILABLE = torch.cuda.is_available()
 
@@ -25,7 +26,7 @@ OP = operator.xor
 
 
 def foldr(arr: np.ndarray, op) -> np.ndarray:
-    """Specific version of foldr that's only for Numpy arrays"""
+    """Specific version of foldr that's only for Numpy arrays."""
 
     return np.fromiter(itertools.accumulate(arr, op), dtype=np.float32, count=len(arr))
 
@@ -75,8 +76,8 @@ def argmax(tensor, dim=1):
 # Hack to check if we've already trained a model (assumed to be a good one.
 model_path = Path(f"model-{OP.__name__}" + ("cuda" if CUDA_AVAILABLE else "") + ".pth")
 
-test_mode = model_path.exists()
-train_mode = not test_mode
+test_mode: bool = model_path.exists()
+train_mode: bool = not test_mode
 
 if test_mode:
     model = torch.load(model_path)

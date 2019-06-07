@@ -8,10 +8,7 @@ import torch.optim as optim
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 from torch import nn
-from torch.autograd import Variable as V
-from torch.nn import Parameter as P
 from torch.utils.data import DataLoader
-from torch.autograd import Variable
 
 from args import args
 from env import env

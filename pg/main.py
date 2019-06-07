@@ -2,14 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+from pathlib import Path
+from typing import Optional
 
 import gym
 import numpy as np
 import torch
-from torch import optim
-from torch import tensor
+from torch import optim, tensor
 from torch.distributions.categorical import Categorical
 from torch.nn import Linear, ReLU, Sequential, Softmax
+from torch.utils.tensorboard import SummaryWriter
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--iterations", type=int, default=10 ** 3)
@@ -40,11 +43,12 @@ critic = Sequential(Linear(S, H), ReLU(), Linear(H, H), ReLU(), Linear(H, 1))
 opt = optim.Adam(list(actor.parameters()) + list(critic.parameters()))
 
 
-def G(rewards, start=0, end=None):
+def G(rewards, start: int = 0, end: Optional[int] = None) -> float:
     return sum(rewards[start:end])
 
 
 if __name__ == "__main__":
+    writer = SummaryWriter(log_dir=Path("tb/pg"))
 
     for episode in range(NUM_EPISODES):
         s, done = env.reset(), False
@@ -77,14 +81,9 @@ if __name__ == "__main__":
         log_probs = torch.stack(log_probs).flatten()
 
         loss = -(Adv @ log_probs) / len(rewards)
-        if episode > 500 and loss.item() < -1000:
-            # TODO(alok): XXX rm
-            from pudb import set_trace
-
-            set_trace(paused=True)
 
         loss.backward()
         opt.step()
         opt.zero_grad()
 
-        print(f"E: {episode+1}, R: {sum(rewards)}")
+        writer.add_scalar("Total Reward", sum(rewards), episode)

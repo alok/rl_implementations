@@ -122,7 +122,7 @@ def train(model, old_model, data) -> float:
         [sum(discounted_rewards[t:]) for t, _ in enumerate(discounted_rewards)]
     )
 
-    state_values = model.vf(states).reshape(-1)
+    state_values = model.vf(states).flatten()
 
     adv = cumulative_returns - state_values
     vf_loss = F.mse_loss(state_values, cumulative_returns)

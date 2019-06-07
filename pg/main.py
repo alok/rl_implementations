@@ -69,12 +69,12 @@ if __name__ == "__main__":
         ]
 
         states = torch.stack(states)
-        state_values = critic(states).reshape(-1)
+        state_values = critic(states).flatten()
 
         cumulative_returns = tensor(cumulative_returns)
         Adv = cumulative_returns - state_values
 
-        log_probs = torch.stack(log_probs).reshape(-1)
+        log_probs = torch.stack(log_probs).flatten()
 
         loss = -(Adv @ log_probs) / len(rewards)
         if episode > 500 and loss.item() < -1000:
